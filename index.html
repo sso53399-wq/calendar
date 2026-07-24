@@ -87,6 +87,7 @@
   .mbar.rl{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:0;width:calc(100% + 3px)}
   .mbar.rr{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:0;width:calc(100% + 3px)}
   .mbar.rl.rr{width:100%;margin-left:0;margin-right:0}
+  .mbar-empty{background:transparent!important}
   .more{font-size:9px;color:var(--ink-3);font-weight:600}
 
   .lock::before{content:"";position:absolute;top:3px;right:4px;width:5px;height:5px;border-radius:50%;background:#3b82f6}
@@ -764,32 +765,69 @@ function renderAll(){
   }
   $('#allBody').innerHTML=html;
 }
+/**
+ * 지정한 기간(달력에 보이는 전체 범위)에 걸친 일정에 "줄(행) 번호"를 한 번만 배정한다.
+ * 이렇게 하면 같은 일정은 그 일정이 보이는 모든 날짜에서 항상 같은 줄에 나온다
+ * (매일 따로 계산하면 다른 일정이 끼어들 때마다 줄이 들쭉날쭉해진다).
+ */
+function assignEventRows(rangeStart,rangeEnd){
+  const seen=new Map();
+  Object.entries(EVENTS).forEach(([startDate,list])=>{
+    (list||[]).forEach(ev=>{
+      const end=ev.endDate||startDate;
+      if(end<rangeStart||startDate>rangeEnd)return; // 보이는 범위와 겹치지 않으면 제외
+      seen.set(ev.id,{...ev,_key:startDate});
+    });
+  });
+  const list=[...seen.values()].sort((a,b)=>{
+    if(a._key!==b._key)return a._key<b._key?-1:1;
+    const aLen=diff(a._key,a.endDate||a._key), bLen=diff(b._key,b.endDate||b._key);
+    if(aLen!==bLen)return bLen-aLen; // 긴 일정이 먼저 줄을 잡는다
+    return String(a.id).localeCompare(String(b.id));
+  });
+  const rowEnd=[]; // rowEnd[r] = 그 줄에 마지막으로 배정된 일정의 종료일
+  const rowOf={};
+  list.forEach(ev=>{
+    const start=ev._key, end=ev.endDate||start;
+    let r=0;
+    while(r<rowEnd.length&&rowEnd[r]>=start)r++;
+    rowEnd[r]=end;
+    rowOf[ev.id]=r;
+  });
+  return {rowOf,byId:seen};
+}
+
 function renderMine(){
   const {y,m}=cur,last=dim(y,m),ot=overtime(y,m,myTeam),pre=`${y}-${String(m).padStart(2,'0')}`;
   const first=mk(y,m,1);
   let cursor=add(first,-dow(first));
   const lastD=mk(y,m,last), endPad=add(lastD,6-dow(lastD));
+  const {rowOf,byId}=assignEventRows(cursor,endPad);
+  const MAX_BARS=3;
   let html='';
   while(cursor<=endPad){
     const out=cursor.slice(0,7)!==pre;
     const cls=[dow(cursor)===6?'sa':'',dow(cursor)===0?'su':'',isHol(cursor)?'hol':''].filter(Boolean).join(' ');
     const evs=eventsOnDate(cursor);
-    const MAX_BARS=3;
-    const shown=evs.slice(0,MAX_BARS).map(e=>{
+    const maxRow=evs.reduce((m2,e)=>Math.max(m2,rowOf[e.id]??0),-1);
+    let bars='';
+    for(let r=0;r<Math.min(maxRow+1,MAX_BARS);r++){
+      const e=evs.find(x=>rowOf[x.id]===r);
+      if(!e){ bars+='<div class="mbar mbar-empty"></div>'; continue; }
       const cat=CATS.find(c=>c[0]===e.category)||CATS[8];
       const color=e.color||cat[1];
       const start=e._key, end=e.endDate||start;
-      const rl=cursor===start||dow(cursor)===0; // 시작일이거나 주의 첫 칸이면 왼쪽 둥글게 + 제목 표시
-      const rr=cursor===end||dow(cursor)===6;   // 종료일이거나 주의 마지막 칸이면 오른쪽 둥글게
-      const cls=['mbar',rl?'rl':'',rr?'rr':''].filter(Boolean).join(' ');
-      return `<div class="${cls}" style="background:${color}">${rl?(e.important?'★ ':'')+escapeHtml(e.title):''}</div>`;
-    }).join('');
-    const more=evs.length>MAX_BARS?`<span class="more">+${evs.length-MAX_BARS}</span>`:'';
+      const rl=cursor===start||dow(cursor)===0;
+      const rr=cursor===end||dow(cursor)===6;
+      const bcls=['mbar',rl?'rl':'',rr?'rr':''].filter(Boolean).join(' ');
+      bars+=`<div class="${bcls}" style="background:${color}">${rl?(e.important?'★ ':'')+escapeHtml(e.title):''}</div>`;
+    }
+    const more=maxRow+1>MAX_BARS?`<span class="more">+${maxRow+1-MAX_BARS}</span>`:'';
     html+=`<div class="day ${out?'out':''} ${!out&&cursor===TODAY?'today-cell':''} ${!out&&ovrOf(cursor,myTeam)?'lock':''}" ${out?'':`data-d="${cursor}" data-t="${myTeam}"`}>
       <span class="num ${cls} ${cursor===TODAY?'now':''}">${+cursor.slice(8)}</span>
       ${isHol(cursor)&&!out?`<span class="hn">${HOL[cursor].name}</span>`:''}
       ${badge(shiftOf(cursor,myTeam,ot))}
-      <div class="evbars">${shown}${more}</div></div>`;
+      <div class="evbars">${bars}${more}</div></div>`;
     cursor=add(cursor,1);
   }
   $('#mineBody').innerHTML=html;
