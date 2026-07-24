@@ -3,11 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- 폰 브라우저가 예전 파일을 계속 붙잡고 있지 않도록 캐시를 끈다.
-     (홈 화면에 추가한 경우 특히 캐시가 오래 남아 수정이 반영 안 되는 문제를 막기 위함) -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>5조 근무달력</title>
 <style>
   :root{
@@ -47,12 +42,12 @@
   .b-W{background:var(--w-bg);color:var(--w-ink)}
   .b-WH{background:var(--w-bg);color:var(--wh-line);box-shadow:inset 0 0 0 2px var(--wh-line);width:31px;font-size:10px}
 
-  .weekhead{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));padding:0 12px}
+  .weekhead{display:grid;grid-template-columns:26px repeat(7,1fr);padding:0 12px}
   .weekhead span{text-align:center;font-size:11px;font-weight:650;color:var(--ink-3);padding:9px 0 5px}
   .weekhead .sa{color:var(--sat)}.weekhead .su{color:var(--sun)}
   .wblock{padding:0 12px;margin-bottom:14px}
-  .dates{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
-  .dates b{text-align:center;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 0 6px}
+  .dates{display:grid;grid-template-columns:26px repeat(7,1fr);border-bottom:1px solid var(--line)}
+  .dates b{text-align:center;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 0 6px;border-left:1px solid var(--line-2)}
   .dates b.out{color:#dfe3ea}
   .dates b.sa{color:var(--sat)}
   .dates b.su,.dates b.hol{color:var(--sun)}
@@ -62,42 +57,37 @@
     box-shadow:0 0 0 3px rgba(22,163,74,.22);
   }
   .hname{grid-column:2/-1;font-size:10px;color:var(--sun);padding:0 0 4px 2px;font-weight:600}
-  .trow{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));align-items:center;border-bottom:1px solid var(--line-2)}
+  .trow{display:grid;grid-template-columns:26px repeat(7,1fr);align-items:center;border-bottom:1px solid var(--line-2)}
   .trow:last-child{border-bottom:none}
   .trow.mine{background:var(--mine)}
   .trow .tag{font-size:11px;font-weight:700;color:var(--ink-3);text-align:left;padding-left:1px}
   .trow.mine .tag{color:var(--ink)}
-  .cell{display:grid;place-items:center;padding:5px 0;position:relative}
+  .cell{display:grid;place-items:center;padding:5px 0;position:relative;border-left:1px solid var(--line-2)}
   .cell:active{background:rgba(0,0,0,.03)}
 
   .mcal{padding:0 12px}
-  .mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
-  .day{min-height:66px;min-width:0;background:#fff;padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;overflow:visible}
+  .mgrid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .day{min-height:66px;border:1px solid var(--line);padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .mgrid{border:1px solid var(--line)}
   .day:active{background:var(--tap)}
   .day .num{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
   .day.out .num{color:#e3e7ee}.day.out .badge{opacity:.22}
   .day .sa{color:var(--sat)}.day .su,.day .hol{color:var(--sun)}
   .day .now{background:var(--today);color:#fff;border-radius:8px;padding:2px 7px;font-weight:800;box-shadow:0 0 0 3px rgba(22,163,74,.22)}
-  .day.today-cell{background:rgba(22,163,74,.06)}
-  .hn{font-size:9px;color:var(--sun);line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .day.today-cell{background:rgba(22,163,74,.06);border-radius:10px}
+  .hn{font-size:9px;color:var(--sun);line-height:1.1;height:10px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .evs{display:flex;flex-direction:column;gap:2px;width:100%;align-items:center}
   .ev{font-size:9px;line-height:1.35;border-radius:3px;padding:0 3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#e7f0fe;color:#20539b;font-weight:600}
-  .evbars{
-    display:flex;flex-direction:column;gap:2px;
-    width:calc(100% + 6px);min-width:0;margin:2px -3px 0;
-  }
+  .evbars{display:flex;flex-direction:column;gap:2px;width:100%;margin-top:2px}
   .mbar{
-    position:relative;z-index:2;
     height:15px;line-height:15px;font-size:8.5px;font-weight:700;color:#fff;
     padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    width:100%;min-width:0;box-sizing:border-box;
+    margin:0 -4px;width:calc(100% + 8px);box-sizing:border-box;position:relative;z-index:1;
   }
-  /* 여러 날짜 일정은 날짜 칸의 좌우 여백과 1px 격자선을 덮어 한 줄처럼 이어 보이게 한다.
-     시작/종료·주 경계의 둥근 모서리(rl/rr) 계산은 기존 JS를 그대로 사용한다. */
-  .mbar:not(.rr){width:calc(100% + 1px)}
-  .mbar.rl{border-top-left-radius:4px;border-bottom-left-radius:4px}
-  .mbar.rr{border-top-right-radius:4px;border-bottom-right-radius:4px}
-  .mbar-empty{background:transparent!important}
+  .mbar.rl{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:0;width:calc(100% + 4px)}
+  .mbar.rr{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:0;width:calc(100% + 4px)}
+  .mbar.rl.rr{width:100%;margin-left:0;margin-right:0}
+  .mbar.empty{visibility:hidden}
   .more{font-size:9px;color:var(--ink-3);font-weight:600}
 
   .lock::before{content:"";position:absolute;top:3px;right:4px;width:5px;height:5px;border-radius:50%;background:#3b82f6}
@@ -310,7 +300,7 @@
   <section id="view-mine">
     <div class="sum" id="sum"></div>
     <div class="mcal">
-      <div class="weekhead" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;padding:0 1px">
+      <div class="weekhead" style="grid-template-columns:repeat(7,1fr);padding:0">
         <span class="su">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sa">토</span>
       </div>
       <div class="mgrid" id="mineBody"></div>
@@ -482,10 +472,6 @@
 <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js"></script>
 <script>
 /* ═══ 계산 엔진 ═══ */
-/* 설정 화면 맨 아래에 표시된다. GitHub에 새로 올린 파일이 실제로 반영됐는지
-   이 숫자로 바로 확인할 수 있다 (안 바뀌었으면 아직 예전 파일을 보고 있는 것). */
-const APP_VERSION='2026.07.24-b';
-
 const PATTERN=['D','A','X','X','X'], TEAMS=['A','B','C','D','E'];
 const OFFSET={A:0,B:1,C:4,D:3,E:2}, ANCHOR='2026-07-01', MS=86400000;
 const pd=s=>new Date(Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)));
@@ -686,6 +672,43 @@ function eventsOnDate(date){
   });
   return out;
 }
+/**
+ * 한 주 안에서 겹치는 일정마다 고정된 표시 줄을 배정한다.
+ * 날짜마다 목록을 다시 정렬하지 않아 다른 일정이 끼어도 같은 막대가 위아래로 움직이지 않는다.
+ */
+function eventsInRange(rangeStart,rangeEnd){
+  const out=[];
+  Object.entries(EVENTS).forEach(([startDate,list])=>{
+    (list||[]).forEach((ev,index)=>{
+      const end=ev.endDate||startDate;
+      if(startDate<=rangeEnd&&end>=rangeStart){
+        out.push({...ev,_key:startDate,_uid:ev.id||`${startDate}:${index}`});
+      }
+    });
+  });
+  return out;
+}
+function weekEventLanes(weekStart,maxLanes){
+  const weekEnd=add(weekStart,6);
+  const laneEnds=Array(maxLanes).fill('');
+  return eventsInRange(weekStart,weekEnd)
+    .sort((a,b)=>{
+      const as=a._key<weekStart?weekStart:a._key;
+      const bs=b._key<weekStart?weekStart:b._key;
+      if(as!==bs)return as.localeCompare(bs);
+      const ae=(a.endDate||a._key)>weekEnd?weekEnd:(a.endDate||a._key);
+      const be=(b.endDate||b._key)>weekEnd?weekEnd:(b.endDate||b._key);
+      if(ae!==be)return be.localeCompare(ae);
+      return String(a._uid).localeCompare(String(b._uid));
+    })
+    .map(ev=>{
+      const segmentStart=ev._key<weekStart?weekStart:ev._key;
+      const segmentEnd=(ev.endDate||ev._key)>weekEnd?weekEnd:(ev.endDate||ev._key);
+      const lane=laneEnds.findIndex(end=>!end||end<segmentStart);
+      if(lane>=0)laneEnds[lane]=segmentEnd;
+      return {...ev,_lane:lane};
+    });
+}
 /** 여러 날짜짜리 일정인가 (startDate는 EVENTS에 저장된 실제 시작일) */
 const isMultiDay=(ev,startDate)=>!!(ev.endDate&&ev.endDate!==startDate);
 const DAY_MEMO={};
@@ -779,69 +802,42 @@ function renderAll(){
   }
   $('#allBody').innerHTML=html;
 }
-/**
- * 지정한 기간(달력에 보이는 전체 범위)에 걸친 일정에 "줄(행) 번호"를 한 번만 배정한다.
- * 이렇게 하면 같은 일정은 그 일정이 보이는 모든 날짜에서 항상 같은 줄에 나온다
- * (매일 따로 계산하면 다른 일정이 끼어들 때마다 줄이 들쭉날쭉해진다).
- */
-function assignEventRows(rangeStart,rangeEnd){
-  const seen=new Map();
-  Object.entries(EVENTS).forEach(([startDate,list])=>{
-    (list||[]).forEach(ev=>{
-      const end=ev.endDate||startDate;
-      if(end<rangeStart||startDate>rangeEnd)return; // 보이는 범위와 겹치지 않으면 제외
-      seen.set(ev.id,{...ev,_key:startDate});
-    });
-  });
-  const list=[...seen.values()].sort((a,b)=>{
-    if(a._key!==b._key)return a._key<b._key?-1:1;
-    const aLen=diff(a._key,a.endDate||a._key), bLen=diff(b._key,b.endDate||b._key);
-    if(aLen!==bLen)return bLen-aLen; // 긴 일정이 먼저 줄을 잡는다
-    return String(a.id).localeCompare(String(b.id));
-  });
-  const rowEnd=[]; // rowEnd[r] = 그 줄에 마지막으로 배정된 일정의 종료일
-  const rowOf={};
-  list.forEach(ev=>{
-    const start=ev._key, end=ev.endDate||start;
-    let r=0;
-    while(r<rowEnd.length&&rowEnd[r]>=start)r++;
-    rowEnd[r]=end;
-    rowOf[ev.id]=r;
-  });
-  return {rowOf,byId:seen};
-}
-
 function renderMine(){
   const {y,m}=cur,last=dim(y,m),ot=overtime(y,m,myTeam),pre=`${y}-${String(m).padStart(2,'0')}`;
   const first=mk(y,m,1);
   let cursor=add(first,-dow(first));
   const lastD=mk(y,m,last), endPad=add(lastD,6-dow(lastD));
-  const {rowOf,byId}=assignEventRows(cursor,endPad);
   const MAX_BARS=3;
+  let weekLanes=[];
+  let weekBarCount=0;
   let html='';
   while(cursor<=endPad){
+    if(dow(cursor)===0){
+      weekLanes=weekEventLanes(cursor,MAX_BARS);
+      weekBarCount=weekLanes.reduce((count,e)=>e._lane>=0?Math.max(count,e._lane+1):count,0);
+    }
     const out=cursor.slice(0,7)!==pre;
     const cls=[dow(cursor)===6?'sa':'',dow(cursor)===0?'su':'',isHol(cursor)?'hol':''].filter(Boolean).join(' ');
-    const evs=eventsOnDate(cursor);
-    const maxRow=evs.reduce((m2,e)=>Math.max(m2,rowOf[e.id]??0),-1);
-    let bars='';
-    for(let r=0;r<Math.min(maxRow+1,MAX_BARS);r++){
-      const e=evs.find(x=>rowOf[x.id]===r);
-      if(!e){ bars+='<div class="mbar mbar-empty"></div>'; continue; }
+    const dayEvents=weekLanes.filter(e=>e._key<=cursor&&cursor<=(e.endDate||e._key));
+    const laneEvents=Array(weekBarCount).fill(null);
+    dayEvents.forEach(e=>{if(e._lane>=0)laneEvents[e._lane]=e;});
+    const shown=laneEvents.map(e=>{
+      if(!e)return '<div class="mbar empty" aria-hidden="true"></div>';
       const cat=CATS.find(c=>c[0]===e.category)||CATS[8];
       const color=e.color||cat[1];
       const start=e._key, end=e.endDate||start;
-      const rl=cursor===start||dow(cursor)===0;
-      const rr=cursor===end||dow(cursor)===6;
-      const bcls=['mbar',rl?'rl':'',rr?'rr':''].filter(Boolean).join(' ');
-      bars+=`<div class="${bcls}" style="background:${color}">${rl?(e.important?'★ ':'')+escapeHtml(e.title):''}</div>`;
-    }
-    const more=maxRow+1>MAX_BARS?`<span class="more">+${maxRow+1-MAX_BARS}</span>`:'';
+      const rl=cursor===start||dow(cursor)===0; // 시작일이거나 주의 첫 칸이면 왼쪽 둥글게 + 제목 표시
+      const rr=cursor===end||dow(cursor)===6;   // 종료일이거나 주의 마지막 칸이면 오른쪽 둥글게
+      const cls=['mbar',rl?'rl':'',rr?'rr':''].filter(Boolean).join(' ');
+      return `<div class="${cls}" style="background:${color}">${rl?(e.important?'★ ':'')+escapeHtml(e.title):''}</div>`;
+    }).join('');
+    const hiddenCount=dayEvents.filter(e=>e._lane<0).length;
+    const more=hiddenCount?`<span class="more">+${hiddenCount}</span>`:'';
     html+=`<div class="day ${out?'out':''} ${!out&&cursor===TODAY?'today-cell':''} ${!out&&ovrOf(cursor,myTeam)?'lock':''}" ${out?'':`data-d="${cursor}" data-t="${myTeam}"`}>
       <span class="num ${cls} ${cursor===TODAY?'now':''}">${+cursor.slice(8)}</span>
-      ${isHol(cursor)&&!out?`<span class="hn">${HOL[cursor].name}</span>`:''}
+      <span class="hn">${isHol(cursor)&&!out?HOL[cursor].name:''}</span>
       ${badge(shiftOf(cursor,myTeam,ot))}
-      <div class="evbars">${bars}${more}</div></div>`;
+      <div class="evbars">${shown}${more}</div></div>`;
     cursor=add(cursor,1);
   }
   $('#mineBody').innerHTML=html;
@@ -1187,8 +1183,7 @@ function renderSettingsHome(el){
     <div class="setrow" id="goColors"><span class="l">색상 설정</span><span class="r">›</span></div>
     <div class="setrow" id="goHolidays"><span class="l">공휴일 관리</span><span class="r">${Object.keys(MANUAL_HOL).length?Object.keys(MANUAL_HOL).length+'건 직접 추가 ›':'›'}</span></div>
     <div class="setrow"><span class="l">알림</span><span class="r">›</span></div>
-    <div class="setrow" id="goBackup"><span class="l">백업 · 복원</span><span class="r">›</span></div>
-    <div class="setrow" style="border-bottom:none"><span class="l" style="font-weight:600;color:var(--ink-3);font-size:12px">버전</span><span class="r">${APP_VERSION}</span></div>`;
+    <div class="setrow" id="goBackup"><span class="l">백업 · 복원</span><span class="r">›</span></div>`;
   document.getElementById('goStats').onclick=openStats;
   document.getElementById('goHolidays').onclick=openHolidayMgmt;
   document.getElementById('goColors').onclick=openColors;
