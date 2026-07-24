@@ -467,6 +467,8 @@
   <button data-tab="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M4 12a8 8 0 0116 0 8 8 0 01-16 0z" opacity=".35"/></svg>설정</button>
 </nav>
 
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js"></script>
 <script>
 /* ═══ 계산 엔진 ═══ */
 const PATTERN=['D','A','X','X','X'], TEAMS=['A','B','C','D','E'];
@@ -519,7 +521,73 @@ function kvGet(k){
   }catch(e){ return Promise.resolve(null); }
 }
 
-function saveManualHol(){kvSet('manualhol',JSON.stringify(MANUAL_HOL));}
+/* ═══ 클라우드 동기화 (가족 공유) — Firebase Firestore ═══
+   기기마다 따로 저장되던 걸, 하나의 공유 문서에 실시간으로 맞춘다.
+   가족 중 누구든 열어도 같은 근무 변경·일정·메모를 보고 편집할 수 있다.
+   연결이 안 되거나 SDK가 없으면 조용히 건너뛰고 기존처럼 이 기기에만 저장된다. */
+const firebaseConfig={
+  apiKey:"AIzaSyDV5qh8VMS_6LPoJpRiogSmuJdnCOUcKHQ",
+  authDomain:"song-calendar-a9af7.firebaseapp.com",
+  projectId:"song-calendar-a9af7",
+  storageBucket:"song-calendar-a9af7.firebasestorage.app",
+  messagingSenderId:"864388403525",
+  appId:"1:864388403525:web:8cb9cebe0fa47f442bee2c",
+};
+let cloudDocRef=null, cloudReady=false, cloudWriteTimer=null;
+
+function initCloud(){
+  try{
+    if(typeof firebase==='undefined')return;
+    firebase.initializeApp(firebaseConfig);
+    cloudDocRef=firebase.firestore().collection('calendar').doc('shared');
+    cloudReady=true;
+  }catch(e){ console.warn('클라우드 연결 실패 — 이 기기에만 저장됩니다.',e); }
+}
+
+/* 저장 동작이 있을 때마다 호출. 여러 번 연달아 호출돼도 0.6초 안에 한 번만 전송한다. */
+function scheduleCloudSync(){
+  if(!cloudReady)return;
+  clearTimeout(cloudWriteTimer);
+  cloudWriteTimer=setTimeout(()=>{
+    cloudDocRef.set(collectBackup()).catch(e=>console.warn('클라우드 저장 실패',e));
+  },600);
+}
+
+/* 다른 기기(가족)가 바꾼 내용이 도착했을 때 반영한다. restoreFromBackup과 달리
+   다시 클라우드로 쏘지 않는다 (안 그러면 서로 계속 주고받는 반복이 생긴다). */
+function applyRemoteData(data){
+  if(!data||typeof data!=='object')return;
+  const replace=(store,incoming)=>{Object.keys(store).forEach(k=>delete store[k]);Object.assign(store,incoming||{});};
+  replace(OVR,data.overrides);
+  replace(EVENTS,data.events);
+  replace(DAY_MEMO,data.dayMemo);
+  replace(MONTH_MEMO,data.monthMemo);
+  replace(MANUAL_HOL,data.manualHolidays);
+  if(data.colors)Object.assign(COLOR_SETTINGS,data.colors);
+  if(data.myTeam)myTeam=data.myTeam;
+  rebuildHOL();applyColorSettings();
+  kvSet('overrides',JSON.stringify(OVR));
+  kvSet('events',JSON.stringify(EVENTS));
+  kvSet('daymemo',JSON.stringify(DAY_MEMO));
+  kvSet('monthmemo',JSON.stringify(MONTH_MEMO));
+  kvSet('manualhol',JSON.stringify(MANUAL_HOL));
+  kvSet('colors',JSON.stringify(COLOR_SETTINGS));
+  kvSet('myteam',myTeam);
+}
+
+function listenCloud(){
+  if(!cloudReady)return;
+  cloudDocRef.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites)return; // 방금 내가 보낸 내용의 메아리는 무시
+    const data=snap.data();
+    if(!data)return;
+    applyRemoteData(data);
+    renderTeams();
+    if(typeof renderCurrentView==='function')renderCurrentView();
+  },err=>console.warn('클라우드 수신 실패',err));
+}
+
+function saveManualHol(){kvSet('manualhol',JSON.stringify(MANUAL_HOL));scheduleCloudSync();}
 function loadManualHol(){
   return kvGet('manualhol').then(v=>{if(v)Object.assign(MANUAL_HOL,JSON.parse(v))}).catch(()=>{});
 }
@@ -543,7 +611,7 @@ const isHol=d=>!!HOL[d];
 const OVR={};
 const key=(d,t)=>d+'|'+t;
 const ovrOf=(d,t)=>OVR[key(d,t)]||null;
-function saveOvr(){kvSet('overrides',JSON.stringify(OVR));}
+function saveOvr(){kvSet('overrides',JSON.stringify(OVR));scheduleCloudSync();}
 function loadOvr(){
   return kvGet('overrides').then(v=>{if(v)Object.assign(OVR,JSON.parse(v))}).catch(()=>{});
 }
@@ -608,15 +676,15 @@ const isMultiDay=(ev,startDate)=>!!(ev.endDate&&ev.endDate!==startDate);
 const DAY_MEMO={};
 const MONTH_MEMO={};
 
-function saveEvents(){kvSet('events',JSON.stringify(EVENTS));}
+function saveEvents(){kvSet('events',JSON.stringify(EVENTS));scheduleCloudSync();}
 function loadEvents(){
   return kvGet('events').then(v=>{if(v)Object.assign(EVENTS,JSON.parse(v))}).catch(()=>{});
 }
-function saveDayMemo(){kvSet('daymemo',JSON.stringify(DAY_MEMO));}
+function saveDayMemo(){kvSet('daymemo',JSON.stringify(DAY_MEMO));scheduleCloudSync();}
 function loadDayMemo(){
   return kvGet('daymemo').then(v=>{if(v)Object.assign(DAY_MEMO,JSON.parse(v))}).catch(()=>{});
 }
-function saveMonthMemo(){kvSet('monthmemo',JSON.stringify(MONTH_MEMO));}
+function saveMonthMemo(){kvSet('monthmemo',JSON.stringify(MONTH_MEMO));scheduleCloudSync();}
 function loadMonthMemo(){
   return kvGet('monthmemo').then(v=>{if(v)Object.assign(MONTH_MEMO,JSON.parse(v))}).catch(()=>{});
 }
@@ -642,13 +710,13 @@ function applyColorSettings(){
   root.setProperty('--sun',COLOR_SETTINGS.sun);
   root.setProperty('--mine',hexToRgba(COLOR_SETTINGS.mine,0.14));
 }
-function saveColorSettings(){kvSet('colors',JSON.stringify(COLOR_SETTINGS));}
+function saveColorSettings(){kvSet('colors',JSON.stringify(COLOR_SETTINGS));scheduleCloudSync();}
 function loadColorSettings(){
   return kvGet('colors').then(v=>{if(v){Object.assign(COLOR_SETTINGS,JSON.parse(v));applyColorSettings();}}).catch(()=>{});
 }
 applyColorSettings();
 
-function saveMyTeam(){kvSet('myteam',myTeam);}
+function saveMyTeam(){kvSet('myteam',myTeam);scheduleCloudSync();}
 function loadMyTeam(){
   return kvGet('myteam').then(v=>{if(v)myTeam=v}).catch(()=>{});
 }
@@ -1330,7 +1398,11 @@ document.querySelectorAll('nav.tabs button').forEach(b=>{
     render();
   };
 });
-Promise.all([loadOvr(),loadEvents(),loadDayMemo(),loadMonthMemo(),loadManualHol(),loadColorSettings(),loadMyTeam()]).then(()=>{rebuildHOL();render();});
+initCloud();
+Promise.all([loadOvr(),loadEvents(),loadDayMemo(),loadMonthMemo(),loadManualHol(),loadColorSettings(),loadMyTeam()]).then(()=>{
+  rebuildHOL();render();
+  listenCloud(); // 로컬 데이터를 먼저 화면에 띄운 뒤, 클라우드에 있는 최신 데이터로 덮어씌운다
+});
 </script>
 </body>
 </html>
