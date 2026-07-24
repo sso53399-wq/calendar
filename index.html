@@ -47,7 +47,7 @@
   .weekhead .sa{color:var(--sat)}.weekhead .su{color:var(--sun)}
   .wblock{padding:0 12px;margin-bottom:14px}
   .dates{display:grid;grid-template-columns:26px repeat(7,1fr);border-bottom:1px solid var(--line)}
-  .dates b{text-align:center;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 0 6px}
+  .dates b{text-align:center;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 0 6px;border-left:1px solid var(--line-2)}
   .dates b.out{color:#dfe3ea}
   .dates b.sa{color:var(--sat)}
   .dates b.su,.dates b.hol{color:var(--sun)}
@@ -62,12 +62,13 @@
   .trow.mine{background:var(--mine)}
   .trow .tag{font-size:11px;font-weight:700;color:var(--ink-3);text-align:left;padding-left:1px}
   .trow.mine .tag{color:var(--ink)}
-  .cell{display:grid;place-items:center;padding:5px 0;position:relative}
+  .cell{display:grid;place-items:center;padding:5px 0;position:relative;border-left:1px solid var(--line-2)}
   .cell:active{background:rgba(0,0,0,.03)}
 
   .mcal{padding:0 12px}
   .mgrid{display:grid;grid-template-columns:repeat(7,1fr)}
-  .day{min-height:66px;border-top:1px solid var(--line-2);padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .day{min-height:66px;border:1px solid var(--line);padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .mgrid{border:1px solid var(--line)}
   .day:active{background:var(--tap)}
   .day .num{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
   .day.out .num{color:#e3e7ee}.day.out .badge{opacity:.22}
@@ -77,6 +78,15 @@
   .hn{font-size:9px;color:var(--sun);line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .evs{display:flex;flex-direction:column;gap:2px;width:100%;align-items:center}
   .ev{font-size:9px;line-height:1.35;border-radius:3px;padding:0 3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#e7f0fe;color:#20539b;font-weight:600}
+  .evbars{display:flex;flex-direction:column;gap:2px;width:100%;margin-top:2px}
+  .mbar{
+    height:15px;line-height:15px;font-size:8.5px;font-weight:700;color:#fff;
+    padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    margin:0 -3px;width:calc(100% + 6px);box-sizing:border-box;
+  }
+  .mbar.rl{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:0;width:calc(100% + 3px)}
+  .mbar.rr{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:0;width:calc(100% + 3px)}
+  .mbar.rl.rr{width:100%;margin-left:0;margin-right:0}
   .more{font-size:9px;color:var(--ink-3);font-weight:600}
 
   .lock::before{content:"";position:absolute;top:3px;right:4px;width:5px;height:5px;border-radius:50%;background:#3b82f6}
@@ -160,6 +170,25 @@
   .cswatch[aria-pressed="true"]::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800;text-shadow:0 0 2px rgba(0,0,0,.35)}
   .echeckrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);font-weight:650;margin-bottom:10px}
   .echeckrow input{width:16px;height:16px}
+  .ef-titlebox{
+    width:100%;min-height:60px;border-radius:14px;border:none;resize:vertical;
+    padding:14px 16px;font-size:16px;font-weight:650;font-family:inherit;color:#3d3000;
+    background:#ffd400;transition:background .15s;
+  }
+  .ef-titlebox::placeholder{color:rgba(61,48,0,.45)}
+  .tglrow{display:flex;align-items:center;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line-2)}
+  .tglrow .l{font-size:14px;font-weight:650;color:var(--ink)}
+  .tgl{position:relative;width:46px;height:26px;border-radius:13px;background:var(--line);flex:0 0 auto;transition:background .15s}
+  .tgl::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+  .tgl[aria-pressed="true"]{background:var(--ink)}
+  .tgl[aria-pressed="true"]::after{left:22px}
+  .drow{display:flex;align-items:center;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line-2);gap:10px}
+  .drow .l{font-size:14px;font-weight:650;color:var(--ink);flex:0 0 auto}
+  .drow .dtwrap{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex:1;min-width:0}
+  .drow input[type=date],.drow input[type=time]{
+    border:none;background:none;font-size:13.5px;color:var(--ink-2);font-family:inherit;
+    text-align:right;padding:2px 0;min-width:0;
+  }
   .dmemo textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:13px;color:var(--ink);min-height:64px;font-family:inherit;resize:vertical}
 
   #view-list{padding:0 14px 8px}
@@ -365,18 +394,33 @@
     <div id="dEvents"></div>
     <button class="addbtn" id="dAddEvent">+ 일정 추가</button>
     <div id="dEventForm" class="hide" style="margin-top:12px">
-      <div class="efield"><label>제목</label><input type="text" id="efTitle" placeholder="일정 제목"></div>
+      <textarea id="efTitle" class="ef-titlebox" placeholder="일정을 입력하세요" rows="2"></textarea>
+
+      <div class="efield" style="margin-top:14px"><label>색</label>
+        <div class="cswatches" id="efColor"></div>
+      </div>
       <div class="efield"><label>종류</label>
         <div class="catgrid" id="efCat"></div>
       </div>
-      <div class="efield"><label>색상</label>
-        <div class="cswatches" id="efColor"></div>
+
+      <div class="tglrow">
+        <span class="l">하루 종일</span>
+        <button type="button" class="tgl" id="efAllDay" aria-pressed="true"></button>
       </div>
-      <div class="efield"><label>시간 (선택)</label>
-        <div class="etimerow"><input type="text" id="efStart" placeholder="시작 예: 09:00"><input type="text" id="efEnd" placeholder="종료 예: 18:00"></div>
+      <div class="drow">
+        <span class="l">시작일</span>
+        <div class="dtwrap"><input type="date" id="efStartDate"><input type="time" id="efStartTime" class="hide"></div>
       </div>
-      <div class="efield"><label>메모</label><textarea id="efDetail" placeholder="상세 메모"></textarea></div>
-      <label class="echeckrow"><input type="checkbox" id="efImportant"> 중요 일정으로 표시</label>
+      <div class="drow">
+        <span class="l">종료일</span>
+        <div class="dtwrap"><input type="date" id="efEndDate"><input type="time" id="efEndTime" class="hide"></div>
+      </div>
+
+      <div class="efield" style="margin-top:14px"><label>메모</label><textarea id="efDetail" placeholder="상세 메모"></textarea></div>
+      <div class="tglrow">
+        <span class="l">중요 일정</span>
+        <button type="button" class="tgl" id="efImportant" aria-pressed="false"></button>
+      </div>
       <div class="foot">
         <button id="efCancel">취소</button>
         <button class="primary" id="efSave">저장</button>
@@ -543,6 +587,24 @@ const PALETTE=['#4d8fdb','#7c5cbf','#3fae70','#c98a2b','#d8443c','#5b6270','#e06
 function catColorOf(name){return (CATS.find(c=>c[0]===name)||CATS[8])[1];}
 
 const EVENTS={};
+
+/**
+ * 그 날짜에 걸쳐 있는 일정을 전부 찾는다 (여러 날짜짜리 일정 포함).
+ * 일정은 시작일(EVENTS의 키) 밑에 하나만 저장하고, endDate로 범위를 표현한다.
+ * 반환되는 각 항목에는 _key(실제 저장된 시작일)를 붙여서 완료/삭제 시 위치를 찾을 수 있게 한다.
+ */
+function eventsOnDate(date){
+  const out=[];
+  Object.entries(EVENTS).forEach(([startDate,list])=>{
+    (list||[]).forEach(ev=>{
+      const end=ev.endDate||startDate;
+      if(startDate<=date&&date<=end) out.push({...ev,_key:startDate});
+    });
+  });
+  return out;
+}
+/** 여러 날짜짜리 일정인가 (startDate는 EVENTS에 저장된 실제 시작일) */
+const isMultiDay=(ev,startDate)=>!!(ev.endDate&&ev.endDate!==startDate);
 const DAY_MEMO={};
 const MONTH_MEMO={};
 
@@ -643,18 +705,23 @@ function renderMine(){
   while(cursor<=endPad){
     const out=cursor.slice(0,7)!==pre;
     const cls=[dow(cursor)===6?'sa':'',dow(cursor)===0?'su':'',isHol(cursor)?'hol':''].filter(Boolean).join(' ');
-    const evs=EVENTS[cursor]||[];
-    const shown=evs.slice(0,2).map(e=>{
+    const evs=eventsOnDate(cursor);
+    const MAX_BARS=3;
+    const shown=evs.slice(0,MAX_BARS).map(e=>{
       const cat=CATS.find(c=>c[0]===e.category)||CATS[8];
       const color=e.color||cat[1];
-      return `<span class="ev" style="background:${color}1c;color:${color}">${e.important?'★ ':''}${escapeHtml(e.title)}</span>`;
+      const start=e._key, end=e.endDate||start;
+      const rl=cursor===start||dow(cursor)===0; // 시작일이거나 주의 첫 칸이면 왼쪽 둥글게 + 제목 표시
+      const rr=cursor===end||dow(cursor)===6;   // 종료일이거나 주의 마지막 칸이면 오른쪽 둥글게
+      const cls=['mbar',rl?'rl':'',rr?'rr':''].filter(Boolean).join(' ');
+      return `<div class="${cls}" style="background:${color}">${rl?(e.important?'★ ':'')+escapeHtml(e.title):''}</div>`;
     }).join('');
-    const more=evs.length>2?`<span class="more">+${evs.length-2}</span>`:'';
+    const more=evs.length>MAX_BARS?`<span class="more">+${evs.length-MAX_BARS}</span>`:'';
     html+=`<div class="day ${out?'out':''} ${!out&&cursor===TODAY?'today-cell':''} ${!out&&ovrOf(cursor,myTeam)?'lock':''}" ${out?'':`data-d="${cursor}" data-t="${myTeam}"`}>
       <span class="num ${cls} ${cursor===TODAY?'now':''}">${+cursor.slice(8)}</span>
-      ${badge(shiftOf(cursor,myTeam,ot))}
       ${isHol(cursor)&&!out?`<span class="hn">${HOL[cursor].name}</span>`:''}
-      <span class="evs">${shown}${more}</span></div>`;
+      ${badge(shiftOf(cursor,myTeam,ot))}
+      <div class="evbars">${shown}${more}</div></div>`;
     cursor=add(cursor,1);
   }
   $('#mineBody').innerHTML=html;
@@ -687,7 +754,7 @@ function render(){
 
 const CODES=[['D','주간'],['A','오후'],['X','휴무'],['W','추가근무'],['WH','면제']];
 const DAYNAME=['일','월','화','수','목','금','토'];
-let detail={d:null,t:null,picksOpen:false,editCat:CATS[0][0],editColor:CATS[0][1],colorTouched:false,editId:null};
+let detail={d:null,t:null,picksOpen:false,editCat:CATS[0][0],editColor:CATS[0][1],colorTouched:false,editId:null,editKey:null,allDay:true,important:false};
 
 function renderCurrentView(){
   if(tab==='all')renderAll();
@@ -696,7 +763,7 @@ function renderCurrentView(){
 }
 
 function openDetail(d,t){
-  detail={d,t,picksOpen:false,editCat:CATS[0][0],editColor:CATS[0][1],colorTouched:false,editId:null};
+  detail={d,t,picksOpen:false,editCat:CATS[0][0],editColor:CATS[0][1],colorTouched:false,editId:null,editKey:null,allDay:true,important:false};
   $('#dEventForm').classList.add('hide');
   drawDetail();
   $('#scrim').classList.add('on');
@@ -739,16 +806,17 @@ document.getElementById('dShiftRow').onclick=e=>{
 };
 
 function drawEvents(){
-  const list=(EVENTS[detail.d]||[]).slice().sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const list=eventsOnDate(detail.d).slice().sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   $('#dEvents').innerHTML = list.length ? list.map(ev=>{
     const cat=CATS.find(c=>c[0]===ev.category)||CATS[8];
     const color=ev.color||cat[1];
     const time=ev.start?`${ev.start}${ev.end?'~'+ev.end:''}`:'';
-    return `<div class="evrow" data-id="${ev.id}">
+    const range=isMultiDay(ev,ev._key)?`${ev._key.slice(5).replace('-','/')}~${ev.endDate.slice(5).replace('-','/')}`:'';
+    return `<div class="evrow" data-id="${ev.id}" data-key="${ev._key}">
       <button class="evchk ${ev.done?'done':''}" data-done></button>
       <div class="evbody">
         <div class="evtitle ${ev.done?'done':''}">${ev.important?'<span class="star">★</span>':''}${escapeHtml(ev.title)}</div>
-        <div class="evmeta"><span class="evcat" style="background:${color}">${cat[0]}</span>${time?`<span>${time}</span>`:''}</div>
+        <div class="evmeta"><span class="evcat" style="background:${color}">${cat[0]}</span>${range?`<span>${range}</span>`:''}${time?`<span>${time}</span>`:''}</div>
       </div>
       <button class="evdel" data-del>삭제</button>
     </div>`;
@@ -756,12 +824,13 @@ function drawEvents(){
 }
 document.getElementById('dEvents').onclick=e=>{
   const row=e.target.closest('.evrow');if(!row)return;
-  const list=EVENTS[detail.d]||[];
+  const startKey=row.dataset.key;
+  const list=EVENTS[startKey]||[];
   const ev=list.find(x=>x.id===row.dataset.id);
   if(!ev)return;
   if(e.target.closest('[data-done]')){ev.done=!ev.done;saveEvents();drawEvents();renderCurrentView();return;}
-  if(e.target.closest('[data-del]')){EVENTS[detail.d]=list.filter(x=>x.id!==ev.id);saveEvents();drawEvents();renderCurrentView();return;}
-  resetEventForm(ev);
+  if(e.target.closest('[data-del]')){EVENTS[startKey]=list.filter(x=>x.id!==ev.id);saveEvents();drawEvents();renderCurrentView();return;}
+  resetEventForm(ev,startKey);
   $('#dEventForm').classList.remove('hide');
 };
 
@@ -769,22 +838,41 @@ function drawCatPicks(){
   $('#efCat').innerHTML=CATS.map(([name,color])=>
     `<button class="catpick" data-cat="${name}" aria-pressed="${detail.editCat===name}" style="${detail.editCat===name?'background:'+color:''}">${name}</button>`).join('');
 }
+function contrastText(hex){
+  const h=hex.replace('#','');
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return (0.299*r+0.587*g+0.114*b)/255>0.6?'#3d3000':'#ffffff';
+}
 function drawColorPicks(){
   $('#efColor').innerHTML=PALETTE.map(c=>
     `<button class="cswatch" data-color="${c}" style="background:${c}" aria-pressed="${detail.editColor===c}"></button>`).join('');
+  const box=$('#efTitle');
+  box.style.background=detail.editColor;
+  box.style.color=contrastText(detail.editColor);
 }
-function resetEventForm(ev){
+function drawAllDayToggle(){
+  $('#efAllDay').setAttribute('aria-pressed',String(detail.allDay));
+  $('#efStartTime').classList.toggle('hide',detail.allDay);
+  $('#efEndTime').classList.toggle('hide',detail.allDay);
+}
+function resetEventForm(ev,startKey){
   detail.editId=ev?ev.id:null;
+  detail.editKey=ev?startKey:null;
   detail.editCat=ev?ev.category:CATS[0][0];
   detail.editColor=ev&&ev.color?ev.color:catColorOf(detail.editCat);
   detail.colorTouched=!!(ev&&ev.color);
+  detail.allDay=ev?!ev.start:true;
+  detail.important=ev?!!ev.important:false;
   $('#efTitle').value=ev?ev.title:'';
-  $('#efStart').value=ev?ev.start||'':'';
-  $('#efEnd').value=ev?ev.end||'':'';
+  $('#efStartDate').value=ev?startKey:detail.d;
+  $('#efEndDate').value=ev?(ev.endDate||startKey):detail.d;
+  $('#efStartTime').value=ev?ev.start||'':'';
+  $('#efEndTime').value=ev?ev.end||'':'';
   $('#efDetail').value=ev?ev.detail||'':'';
-  $('#efImportant').checked=ev?!!ev.important:false;
+  $('#efImportant').setAttribute('aria-pressed',String(detail.important));
   drawCatPicks();
   drawColorPicks();
+  drawAllDayToggle();
 }
 $('#efCat').onclick=e=>{
   const b=e.target.closest('[data-cat]');if(!b)return;
@@ -798,27 +886,45 @@ $('#efColor').onclick=e=>{
   detail.colorTouched=true;
   drawColorPicks();
 };
-$('#dAddEvent').onclick=()=>{resetEventForm(null);$('#dEventForm').classList.remove('hide');};
+$('#efAllDay').onclick=()=>{detail.allDay=!detail.allDay;drawAllDayToggle();};
+$('#efImportant').onclick=()=>{detail.important=!detail.important;$('#efImportant').setAttribute('aria-pressed',String(detail.important));};
+$('#dAddEvent').onclick=()=>{resetEventForm(null,null);$('#dEventForm').classList.remove('hide');};
 $('#efCancel').onclick=()=>{$('#dEventForm').classList.add('hide');};
 $('#efSave').onclick=()=>{
   const title=$('#efTitle').value.trim();
   if(!title){alert('일정 제목을 입력해 주세요.');return;}
-  const list=EVENTS[detail.d]||(EVENTS[detail.d]=[]);
+  const startDate=$('#efStartDate').value||detail.d;
+  const endDate=$('#efEndDate').value||startDate;
+  const dateRe=/^\d{4}-\d{2}-\d{2}$/;
+  if(!dateRe.test(startDate)||!dateRe.test(endDate)){alert('날짜를 선택해 주세요.');return;}
+  if(endDate<startDate){alert('종료일이 시작일보다 빠를 수 없습니다.');return;}
+
   const data={
     id:detail.editId||('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
     title, category:detail.editCat,
     color:detail.colorTouched?detail.editColor:'',
-    start:$('#efStart').value.trim(), end:$('#efEnd').value.trim(),
+    endDate,
+    start:detail.allDay?'':$('#efStartTime').value,
+    end:detail.allDay?'':$('#efEndTime').value,
     detail:$('#efDetail').value.trim(),
-    important:$('#efImportant').checked,
+    important:detail.important,
     done:false,
   };
-  if(detail.editId){
-    const idx=list.findIndex(x=>x.id===detail.editId);
-    if(idx>=0){data.done=list[idx].done;list[idx]=data;}
+
+  if(detail.editId&&detail.editKey){
+    const oldList=EVENTS[detail.editKey]||[];
+    const idx=oldList.findIndex(x=>x.id===detail.editId);
+    if(idx>=0)data.done=oldList[idx].done;
+    if(detail.editKey===startDate){
+      if(idx>=0)oldList[idx]=data;
+    }else{
+      if(idx>=0)EVENTS[detail.editKey]=oldList.filter(x=>x.id!==detail.editId);
+      (EVENTS[startDate]||(EVENTS[startDate]=[])).push(data);
+    }
   }else{
-    list.push(data);
+    (EVENTS[startDate]||(EVENTS[startDate]=[])).push(data);
   }
+
   saveEvents();
   $('#dEventForm').classList.add('hide');
   drawEvents();renderCurrentView();
@@ -983,7 +1089,7 @@ function renderList(filter){
 
   let rows=[];
   Object.keys(EVENTS).sort().forEach(date=>{(EVENTS[date]||[]).forEach(ev=>rows.push({date,...ev}));});
-  if(filter==='upcoming')rows=rows.filter(r=>r.date>=TODAY&&!r.done);
+  if(filter==='upcoming')rows=rows.filter(r=>(r.endDate||r.date)>=TODAY&&!r.done);
   else if(filter==='undone')rows=rows.filter(r=>!r.done);
   else if(filter==='important')rows=rows.filter(r=>r.important);
   rows.sort((a,b)=>a.date.localeCompare(b.date));
@@ -998,11 +1104,12 @@ function renderList(filter){
     }
     const cat=CATS.find(c=>c[0]===r.category)||CATS[8];
     const color=r.color||cat[1];
+    const range=isMultiDay(r,r.date)?`~${+r.endDate.slice(5,7)}/${+r.endDate.slice(8)}`:'';
     const time=r.start?`${r.start}${r.end?'~'+r.end:''}`:'';
     html+=`<div class="evrow" data-godate="${r.date}">
       <span class="evchk ${r.done?'done':''}"></span>
       <div class="evbody">
-        <div class="evtitle ${r.done?'done':''}">${r.important?'<span class="star">★</span>':''}${escapeHtml(r.title)}</div>
+        <div class="evtitle ${r.done?'done':''}">${r.important?'<span class="star">★</span>':''}${escapeHtml(r.title)}${range?` <span style="color:var(--ink-3);font-weight:600">${range}</span>`:''}</div>
         <div class="evmeta"><span class="evcat" style="background:${color}">${cat[0]}</span>${time?`<span>${time}</span>`:''}</div>
       </div>
     </div>`;
