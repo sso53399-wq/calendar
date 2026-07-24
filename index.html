@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 폰 브라우저가 예전 파일을 계속 붙잡고 있지 않도록 캐시를 끈다.
+     (홈 화면에 추가한 경우 특히 캐시가 오래 남아 수정이 반영 안 되는 문제를 막기 위함) -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>5조 근무달력</title>
 <style>
   :root{
@@ -42,11 +47,11 @@
   .b-W{background:var(--w-bg);color:var(--w-ink)}
   .b-WH{background:var(--w-bg);color:var(--wh-line);box-shadow:inset 0 0 0 2px var(--wh-line);width:31px;font-size:10px}
 
-  .weekhead{display:grid;grid-template-columns:26px repeat(7,1fr);padding:0 12px}
+  .weekhead{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));padding:0 12px}
   .weekhead span{text-align:center;font-size:11px;font-weight:650;color:var(--ink-3);padding:9px 0 5px}
   .weekhead .sa{color:var(--sat)}.weekhead .su{color:var(--sun)}
   .wblock{padding:0 12px;margin-bottom:14px}
-  .dates{display:grid;grid-template-columns:26px repeat(7,1fr);border-bottom:1px solid var(--line)}
+  .dates{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
   .dates b{text-align:center;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 0 6px}
   .dates b.out{color:#dfe3ea}
   .dates b.sa{color:var(--sat)}
@@ -57,7 +62,7 @@
     box-shadow:0 0 0 3px rgba(22,163,74,.22);
   }
   .hname{grid-column:2/-1;font-size:10px;color:var(--sun);padding:0 0 4px 2px;font-weight:600}
-  .trow{display:grid;grid-template-columns:26px repeat(7,1fr);align-items:center;border-bottom:1px solid var(--line-2)}
+  .trow{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));align-items:center;border-bottom:1px solid var(--line-2)}
   .trow:last-child{border-bottom:none}
   .trow.mine{background:var(--mine)}
   .trow .tag{font-size:11px;font-weight:700;color:var(--ink-3);text-align:left;padding-left:1px}
@@ -66,26 +71,25 @@
   .cell:active{background:rgba(0,0,0,.03)}
 
   .mcal{padding:0 12px}
-  .mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
-  .day{min-height:66px;background:#fff;padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+  .day{min-height:66px;min-width:0;background:#fff;padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;overflow:hidden}
   .day:active{background:var(--tap)}
   .day .num{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
   .day.out .num{color:#e3e7ee}.day.out .badge{opacity:.22}
   .day .sa{color:var(--sat)}.day .su,.day .hol{color:var(--sun)}
   .day .now{background:var(--today);color:#fff;border-radius:8px;padding:2px 7px;font-weight:800;box-shadow:0 0 0 3px rgba(22,163,74,.22)}
-  .day.today-cell{background:rgba(22,163,74,.06);border-radius:10px}
+  .day.today-cell{background:rgba(22,163,74,.06)}
   .hn{font-size:9px;color:var(--sun);line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .evs{display:flex;flex-direction:column;gap:2px;width:100%;align-items:center}
   .ev{font-size:9px;line-height:1.35;border-radius:3px;padding:0 3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#e7f0fe;color:#20539b;font-weight:600}
-  .evbars{display:flex;flex-direction:column;gap:2px;width:100%;margin-top:2px}
+  .evbars{display:flex;flex-direction:column;gap:2px;width:100%;min-width:0;margin-top:2px}
   .mbar{
     height:15px;line-height:15px;font-size:8.5px;font-weight:700;color:#fff;
     padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    margin:0 -3px;width:calc(100% + 6px);box-sizing:border-box;
+    width:100%;min-width:0;box-sizing:border-box;
   }
-  .mbar.rl{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:0;width:calc(100% + 3px)}
-  .mbar.rr{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:0;width:calc(100% + 3px)}
-  .mbar.rl.rr{width:100%;margin-left:0;margin-right:0}
+  .mbar.rl{border-top-left-radius:4px;border-bottom-left-radius:4px}
+  .mbar.rr{border-top-right-radius:4px;border-bottom-right-radius:4px}
   .mbar-empty{background:transparent!important}
   .more{font-size:9px;color:var(--ink-3);font-weight:600}
 
@@ -299,7 +303,7 @@
   <section id="view-mine">
     <div class="sum" id="sum"></div>
     <div class="mcal">
-      <div class="weekhead" style="grid-template-columns:repeat(7,1fr);padding:0">
+      <div class="weekhead" style="grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;padding:0 1px">
         <span class="su">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sa">토</span>
       </div>
       <div class="mgrid" id="mineBody"></div>
@@ -471,6 +475,10 @@
 <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js"></script>
 <script>
 /* ═══ 계산 엔진 ═══ */
+/* 설정 화면 맨 아래에 표시된다. GitHub에 새로 올린 파일이 실제로 반영됐는지
+   이 숫자로 바로 확인할 수 있다 (안 바뀌었으면 아직 예전 파일을 보고 있는 것). */
+const APP_VERSION='2026.07.24-a';
+
 const PATTERN=['D','A','X','X','X'], TEAMS=['A','B','C','D','E'];
 const OFFSET={A:0,B:1,C:4,D:3,E:2}, ANCHOR='2026-07-01', MS=86400000;
 const pd=s=>new Date(Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)));
@@ -1172,7 +1180,8 @@ function renderSettingsHome(el){
     <div class="setrow" id="goColors"><span class="l">색상 설정</span><span class="r">›</span></div>
     <div class="setrow" id="goHolidays"><span class="l">공휴일 관리</span><span class="r">${Object.keys(MANUAL_HOL).length?Object.keys(MANUAL_HOL).length+'건 직접 추가 ›':'›'}</span></div>
     <div class="setrow"><span class="l">알림</span><span class="r">›</span></div>
-    <div class="setrow" id="goBackup"><span class="l">백업 · 복원</span><span class="r">›</span></div>`;
+    <div class="setrow" id="goBackup"><span class="l">백업 · 복원</span><span class="r">›</span></div>
+    <div class="setrow" style="border-bottom:none"><span class="l" style="font-weight:600;color:var(--ink-3);font-size:12px">버전</span><span class="r">${APP_VERSION}</span></div>`;
   document.getElementById('goStats').onclick=openStats;
   document.getElementById('goHolidays').onclick=openHolidayMgmt;
   document.getElementById('goColors').onclick=openColors;
