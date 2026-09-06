@@ -1488,6 +1488,43 @@ Promise.all([loadOvr(),loadEvents(),loadDayMemo(),loadMonthMemo(),loadManualHol(
   rebuildHOL();render();
   listenCloud(); // 로컬 데이터를 먼저 화면에 띄운 뒤, 클라우드에 있는 최신 데이터로 덮어씌운다
 });
+  /* 조별 W(실제 근무) 개수 — 전체 근무표 상단 */
+(function(){
+  var host=document.getElementById('view-all');
+  if(!host)return;
+  var st=document.createElement('style');
+  st.textContent=
+    '.wsum{display:flex;gap:6px;padding:10px 12px 2px}'+
+    '.wsum .wcard{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:7px 4px;text-align:center}'+
+    '.wsum .wcard.mine{background:var(--mine);border-color:transparent}'+
+    '.wsum .wcard .t{font-size:10px;color:var(--ink-3);font-weight:700}'+
+    '.wsum .wcard .n{font-size:18px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1.25}'+
+    '.wsum .wcard .n.zero{color:var(--ink-3)}'+
+    '.wsum .wcard .sub{font-size:9px;color:var(--ink-3);font-weight:600}'+
+    '.wsumcap{padding:0 13px 6px;font-size:10.5px;color:var(--ink-3);font-weight:600}';
+  document.head.appendChild(st);
+  var bar=document.createElement('div');bar.className='wsum';
+  var cap=document.createElement('div');cap.className='wsumcap';
+  host.insertBefore(cap,host.firstChild);
+  host.insertBefore(bar,host.firstChild);
+  var orig=renderAll;
+  renderAll=function(){
+    orig.apply(this,arguments);
+    var y=cur.y,m=cur.m,last=dim(y,m),counts={},total=0;
+    TEAMS.forEach(function(t){
+      var ot=overtime(y,m,t),n=0;
+      for(var i=1;i<=last;i++){if(shiftOf(mk(y,m,i),t,ot)==='W')n++;}
+      counts[t]=n;total+=n;
+    });
+    bar.innerHTML=TEAMS.map(function(t){
+      var n=counts[t];
+      return '<div class="wcard '+(t===myTeam?'mine':'')+'"><div class="t">'+t+'조</div>'+
+             '<div class="n '+(n===0?'zero':'')+'">'+n+'</div><div class="sub">W</div></div>';
+    }).join('');
+    cap.textContent=m+'월 실제 근무 W · 합계 '+total+'개 (W휴 제외)';
+  };
+  if(typeof render==='function')render();
+})();
 </script>
 </body>
 </html>
