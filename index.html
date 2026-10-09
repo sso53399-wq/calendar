@@ -306,6 +306,19 @@
     .stgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
     .stcell{min-width:0;padding-left:1px;padding-right:1px}
   }
+
+  :root{--ink-3:#667085}
+  body{max-width:880px;margin:auto}
+  .nav,.today-btn{min-height:44px;min-width:44px}
+  button:focus-visible,[role=button]:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+  .sheet:not(.on){visibility:hidden}
+  .sheet.on{visibility:visible}
+  .sheet-close{float:right;border:1px solid var(--line);border-radius:8px;padding:7px 12px;margin-bottom:8px}
+  #eventSearch{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;margin:0 0 12px}
+  .month-hint{font-size:11px;color:var(--ink-2);padding:5px 12px 8px}
+  #saveStatus{font-size:11px;color:var(--ink-2);padding:5px 12px;background:var(--tap)}
+  @media(min-width:700px){.day{min-height:104px}.sheet{max-width:640px;margin:auto}nav.tabs{max-width:880px;margin:auto}.ev,.mbar{font-size:11px}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
@@ -321,13 +334,14 @@
   <div class="teams" id="teams"></div>
 </header>
 
+<div id="saveStatus" role="status" aria-live="polite">이 기기에 저장 · 공유 연결 확인 중</div>
 <main>
   <section id="view-all" class="hide">
     <div class="weekhead"><span></span><span class="su">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sa">토</span></div>
     <div id="allBody"></div>
     <div class="legend">
       <div><i class="badge b-D">D</i> 주간</div>
-      <div><i class="badge b-A">N</i> 오후</div>
+      <div><i class="badge b-A">N</i> 야간</div>
       <div><i class="badge b-X">휴</i> 휴무</div>
       <div><i class="badge b-W">W</i> 추가근무</div>
       <div><i class="badge b-WH">W휴</i> 추가근무 면제</div>
@@ -336,6 +350,7 @@
 
   <section id="view-mine">
     <div class="sum" id="sum"></div>
+    <div class="month-hint" id="monthHint"></div>
     <div class="mcal">
       <div class="weekhead" style="grid-template-columns:repeat(7,1fr);padding:0">
         <span class="su">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sa">토</span>
@@ -370,6 +385,7 @@
       <button class="lfbtn" data-f="undone" aria-pressed="false">미완료</button>
       <button class="lfbtn" data-f="important" aria-pressed="false">중요</button>
     </div>
+    <input id="eventSearch" type="search" placeholder="일정 제목 · 내용 검색" aria-label="일정 검색">
     <div id="listBody"></div>
   </section>
 
@@ -379,6 +395,11 @@
       <h1>공휴일 관리</h1>
     </div>
     <p class="statsub">추가한 공휴일은 즉시 근무표 계산에 반영됩니다.</p>
+    <div class="note"><div id="holidayStatus" role="status" aria-live="polite"></div>
+      <button class="addbtn" id="holidayRefresh">지금 갱신</button>
+      <p>앱 이용 중 24시간마다 확인합니다. 실패하면 기존 자료를 유지합니다.<br>
+      출처: <a href="https://github.com/hyunbinseo/holidays-kr" target="_blank" rel="noopener">월력요항 기반 공개 자료</a> (정부 API 직접 연결 아님). 발표 후 자료 제공처의 반영까지 시간이 걸릴 수 있습니다.<br>직접 추가한 날짜와 근로자의 날은 유지됩니다.</p>
+    </div>
     <div class="hyswitch">
       <button class="nav" id="hyPrev"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <span class="hy" id="hyYear"></span>
@@ -547,7 +568,7 @@ function kvSet(k,v){
   try{
     if(hasClaudeStorage()){ window.storage.set(k,v); return; }
     if(typeof localStorage!=='undefined') localStorage.setItem(k,v);
-  }catch(e){}
+  }catch(e){setSaveStatus('기기 저장 실패 · 백업 파일을 내려받아 주세요');}
 }
 function kvGet(k){
   try{
@@ -575,6 +596,7 @@ let cloudDocRef=null, cloudReady=false, cloudWriteTimer=null;
 
 function initCloud(){
   try{
+    if(location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.protocol==='file:')return;
     if(typeof firebase==='undefined')return;
     firebase.initializeApp(firebaseConfig);
     cloudDocRef=firebase.firestore().collection('calendar').doc('shared');
@@ -587,7 +609,8 @@ function scheduleCloudSync(){
   if(!cloudReady)return;
   clearTimeout(cloudWriteTimer);
   cloudWriteTimer=setTimeout(()=>{
-    cloudDocRef.set(collectBackup()).catch(e=>console.warn('클라우드 저장 실패',e));
+    setSaveStatus('이 기기에 저장 · 공유 저장 중…');
+    cloudDocRef.set(collectBackup()).then(()=>setSaveStatus('이 기기에 저장 · 공유 저장 완료')).catch(e=>{setSaveStatus('이 기기에 저장 · 공유 저장 실패, 연결을 확인해 주세요');console.warn('클라우드 저장 실패',e);});
   },600);
 }
 
@@ -620,9 +643,10 @@ function listenCloud(){
     const data=snap.data();
     if(!data)return;
     applyRemoteData(data);
+    setSaveStatus(snap.metadata.fromCache?'이 기기에 저장 · 저장된 공유 자료 표시':'이 기기에 저장 · 공유 연결됨');
     renderTeams();
     if(typeof renderCurrentView==='function')renderCurrentView();
-  },err=>console.warn('클라우드 수신 실패',err));
+  },err=>{setSaveStatus('이 기기에 저장 · 공유 연결 실패');console.warn('클라우드 수신 실패',err);});
 }
 
 function saveManualHol(){kvSet('manualhol',JSON.stringify(MANUAL_HOL));scheduleCloudSync();}
@@ -631,13 +655,26 @@ function loadManualHol(){
 }
 
 const HOL={};
+const LIVE_HOL={};
+let holidayCheckedAt=0, holidayAttemptAt=0, holidayLoading=false, holidayError='';
 function rebuildHOL(){
+  for(const year of Object.keys(YEAR_SOURCE))delete YEAR_SOURCE[year];
+  PAST_RAW.forEach(([d])=>YEAR_SOURCE[d.slice(0,4)]='past');
+  API_RAW.forEach(([d])=>YEAR_SOURCE[d.slice(0,4)]='api');
+  COMPUTED_RAW.forEach(([d])=>{if(!YEAR_SOURCE[d.slice(0,4)])YEAR_SOURCE[d.slice(0,4)]='computed';});
   for(const k in HOL)delete HOL[k];
   RAW.forEach(([d,n])=>{
     let counts=true;
     if(d.slice(5)==='05-01')counts=false;
     if(EXCL.some(r=>r.test(n)))counts=false;
     HOL[d]={name:n,counts,source:YEAR_SOURCE[d.slice(0,4)]||'computed'};
+  });
+  Object.entries(LIVE_HOL).forEach(([year,dates])=>{
+    for(const d of Object.keys(HOL))if(d.startsWith(year+'-')&&d.slice(5)!=='05-01')delete HOL[d];
+    Object.entries(dates).forEach(([d,names])=>{
+      HOL[d]={name:names.join(' · '),counts:d.slice(5)!=='05-01'&&names.some(n=>/대체공휴일/.test(n)||!EXCL.some(r=>r.test(n))),source:'feed'};
+    });
+    YEAR_SOURCE[year]='feed';
   });
   Object.entries(MANUAL_HOL).forEach(([d,m])=>{
     HOL[d]={name:m.name,counts:m.counts,source:'manual'};
@@ -680,7 +717,7 @@ function overtime(y,m,team){
 const shiftOf=(date,team,ot)=>ovrOf(date,team)||ot[date]||base(date,team);
 
 function today(){const d=new Date(); return mk(d.getFullYear(),d.getMonth()+1,d.getDate());}
-const TODAY=today();
+let TODAY=today();
 let cur=(()=>{const d=new Date();return {y:d.getFullYear(),m:d.getMonth()+1};})();
 let myTeam='A',tab='mine';
 
@@ -872,7 +909,7 @@ function renderMine(){
     const more=hiddenCount?`<span class="more">+${hiddenCount}</span>`:'';
     html+=`<div class="day ${out?'out':''} ${!out&&cursor===TODAY?'today-cell':''} ${!out&&ovrOf(cursor,myTeam)?'lock':''}" ${out?'':`data-d="${cursor}" data-t="${myTeam}"`}>
       <span class="num ${cls} ${cursor===TODAY?'now':''}">${+cursor.slice(8)}</span>
-      <span class="hn">${isHol(cursor)&&!out?HOL[cursor].name:''}</span>
+      <span class="hn">${isHol(cursor)&&!out?escapeHtml(HOL[cursor].name):''}</span>
       ${badge(shiftOf(cursor,myTeam,ot))}
       <div class="evbars">${shown}${more}</div></div>`;
     cursor=add(cursor,1);
@@ -881,12 +918,14 @@ function renderMine(){
   let d=0,a=0,w=0;
   for(let i=1;i<=last;i++){
     const s=shiftOf(mk(y,m,i),myTeam,ot);
-    if(s==='D')d++;else if(s==='A')a++;else if(s==='W'||s==='WH')w++;
+    if(s==='D')d++;else if(s==='A')a++;else if(s==='W')w++;
   }
-  $('#sum').innerHTML=`<div class="sumcard"><div class="k">D 근무</div><div class="v">${d}</div></div>
-    <div class="sumcard"><div class="k">A 근무</div><div class="v">${a}</div></div>
+  $('#sum').innerHTML=`<div class="sumcard"><div class="k">D 주간</div><div class="v">${d}</div></div>
+    <div class="sumcard"><div class="k">N 야간</div><div class="v">${a}</div></div>
     <div class="sumcard"><div class="k">추가근무</div><div class="v">${w}</div></div>
     <div class="sumcard"><div class="k">휴무</div><div class="v">${last-d-a-w}</div></div>`;
+  const source=YEAR_SOURCE[y];
+  $('#monthHint').textContent=myTeam+'조 · W휴는 휴무에 포함 · '+(source==='computed'?'공휴일은 추정값입니다':source==='feed'?'갱신된 공휴일 반영':'공휴일 기본 수록 자료');
   $('#monthMemo').value=MONTH_MEMO[pre]||'';
 }
 function hideAllScreens(){
@@ -905,7 +944,7 @@ function render(){
   if(tab==='all')renderAll();else if(tab==='mine')renderMine();
 }
 
-const CODES=[['D','주간'],['A','오후'],['X','휴무'],['W','추가근무'],['WH','면제']];
+const CODES=[['D','주간'],['A','야간'],['X','휴무'],['W','추가근무'],['WH','면제']];
 const DAYNAME=['일','월','화','수','목','금','토'];
 let detail={d:null,t:null,picksOpen:false,editCat:CATS[0][0],editColor:CATS[0][1],colorTouched:false,editId:null,editKey:null,allDay:true,important:false};
 
@@ -922,7 +961,7 @@ function openDetail(d,t){
   $('#scrim').classList.add('on');
   $('#detailSheet').classList.add('on');
 }
-function closeDetail(){$('#detailSheet').classList.remove('on')}
+function closeDetail(){closeSheets();}
 
 function drawDetail(){
   const {d,t}=detail;
@@ -982,7 +1021,7 @@ document.getElementById('dEvents').onclick=e=>{
   const ev=list.find(x=>x.id===row.dataset.id);
   if(!ev)return;
   if(e.target.closest('[data-done]')){ev.done=!ev.done;saveEvents();drawEvents();renderCurrentView();return;}
-  if(e.target.closest('[data-del]')){EVENTS[startKey]=list.filter(x=>x.id!==ev.id);saveEvents();drawEvents();renderCurrentView();return;}
+  if(e.target.closest('[data-del]')){if(!confirm('이 일정을 삭제할까요?'))return;EVENTS[startKey]=list.filter(x=>x.id!==ev.id);saveEvents();drawEvents();renderCurrentView();return;}
   resetEventForm(ev,startKey);
   $('#dEventForm').classList.remove('hide');
 };
@@ -1049,9 +1088,14 @@ $('#efSave').onclick=()=>{
   const startDate=$('#efStartDate').value||detail.d;
   const endDate=$('#efEndDate').value||startDate;
   const dateRe=/^\d{4}-\d{2}-\d{2}$/;
-  if(!dateRe.test(startDate)||!dateRe.test(endDate)){alert('날짜를 선택해 주세요.');return;}
+  if(!validDate(startDate)||!validDate(endDate)){alert('날짜를 선택해 주세요.');return;}
   if(endDate<startDate){alert('종료일이 시작일보다 빠를 수 없습니다.');return;}
 
+  if(!detail.allDay){
+    const start=$('#efStartTime').value,end=$('#efEndTime').value;
+    if(!start||!end){alert('시작 시간과 종료 시간을 입력해 주세요.');return;}
+    if(startDate===endDate&&end<=start){alert('종료 시간은 시작 시간보다 늦어야 합니다. 밤을 넘기는 일정은 종료일을 다음 날로 설정해 주세요.');return;}
+  }
   const data={
     id:detail.editId||('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
     title, category:detail.editCat,
@@ -1142,7 +1186,7 @@ function renderStats(){
   $('#statTotal').innerHTML = years.length ? `
     <div class="statcard">
       <p class="lead">보유한 공휴일 데이터 ${years[0].year}~${years[years.length-1].year}년 기준. 법정공휴일 <b>${NL}일</b> · 명절 <b>${NF}일</b> 중 조별 근무일수입니다. 기대 지분은 각 조 20%입니다.
-      ${years.some(y=>YEAR_SOURCE[y.year]==='computed') ? '<br><span class="prov">예상</span> 표시된 연도는 아직 공식 발표 전이라 음력 계산으로 추정한 값입니다. API가 발표하면 자동으로 갱신됩니다.' : ''}</p>
+      ${years.some(y=>YEAR_SOURCE[y.year]==='computed') ? '<br><span class="prov">예상</span> 표시된 연도는 아직 공식 발표 전이라 음력 계산으로 추정한 값입니다. 공개 자료에 새 연도가 추가되면 갱신됩니다. 수록되지 않은 연도는 추정값입니다.' : ''}</p>
       <div class="sbars">${barBlock(0,'#e8912d',NL*0.2)}</div>
       <div class="slegend"><span><i style="background:#e8912d"></i>법정 (기대 ${(NL*0.2).toFixed(1)}일)</span></div>
       <div class="sbars" style="margin-top:12px">${barBlock(1,'#2f6fd0',NF*0.2)}</div>
@@ -1219,7 +1263,7 @@ function renderSettingsHome(el){
     </div>
     <div class="setrow" id="goColors"><span class="l">색상 설정</span><span class="r">›</span></div>
     <div class="setrow" id="goHolidays"><span class="l">공휴일 관리</span><span class="r">${Object.keys(MANUAL_HOL).length?Object.keys(MANUAL_HOL).length+'건 직접 추가 ›':'›'}</span></div>
-    <div class="setrow"><span class="l">알림</span><span class="r">›</span></div>
+    <div class="setrow"><span class="l">알림</span><span class="r">아직 지원하지 않음</span></div>
     <div class="setrow" id="goBackup"><span class="l">백업 · 복원</span><span class="r">›</span></div>`;
   document.getElementById('goStats').onclick=openStats;
   document.getElementById('goHolidays').onclick=openHolidayMgmt;
@@ -1228,6 +1272,7 @@ function renderSettingsHome(el){
 }
 
 let listFilter='upcoming';
+$('#eventSearch').oninput=()=>renderList(listFilter);
 function openList(){
   tab='list';
   document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-current',x.dataset.tab==='list'));
@@ -1245,7 +1290,9 @@ function renderList(filter){
   if(filter==='upcoming')rows=rows.filter(r=>(r.endDate||r.date)>=TODAY&&!r.done);
   else if(filter==='undone')rows=rows.filter(r=>!r.done);
   else if(filter==='important')rows=rows.filter(r=>r.important);
-  rows.sort((a,b)=>a.date.localeCompare(b.date));
+  const query=($('#eventSearch').value||'').trim().toLocaleLowerCase();
+  if(query)rows=rows.filter(r=>[r.title,r.detail,r.category].join(' ').toLocaleLowerCase().includes(query));
+  rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.start||'').localeCompare(b.start||''));
 
   if(!rows.length){$('#listBody').innerHTML='<div class="lempty">해당하는 일정이 없습니다</div>';return;}
 
@@ -1289,9 +1336,10 @@ $('#holBack').onclick=()=>{tab='set';openSettings();};
 $('#hyPrev').onclick=()=>{hyYear--;renderHolidayList();};
 $('#hyNext').onclick=()=>{hyYear++;renderHolidayList();};
 
-const SRC_LABEL={api:'공식 발표',past:'과거 기록',computed:'예상(추정)',manual:'직접 추가'};
+const SRC_LABEL={feed:'공개 자료',api:'기본 수록',past:'과거 기록',computed:'예상(추정)',manual:'직접 추가'};
 function renderHolidayList(){
   $('#hyYear').textContent=hyYear;
+  renderHolidayStatus();
   const pre=String(hyYear);
   const dates=Object.keys(HOL).filter(d=>d.startsWith(pre)).sort();
   if(!dates.length){
@@ -1303,7 +1351,7 @@ function renderHolidayList(){
     return `<div class="hrow2" ${h.source==='manual'?`data-del="${d}"`:''}>
       <span class="hdate">${+d.slice(5,7)}/${+d.slice(8)}</span>
       <span class="hname">${escapeHtml(h.name)}</span>
-      <span class="htag ${h.counts?'legal':'fest'}">${h.counts?'법정':'명절'}</span>
+      <span class="htag ${h.counts?'legal':'fest'}">${h.counts?'W휴 대상':'수당만'}</span>
       <span class="hsrc">${SRC_LABEL[h.source]}</span>
       ${h.source==='manual'?'<button class="hdel">삭제</button>':''}
     </div>`;
@@ -1332,15 +1380,15 @@ function drawHfKind(){
   document.querySelectorAll('#hfKind [data-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kind===hfKind)));
 }
 $('#hfKind').onclick=e=>{const b=e.target.closest('[data-kind]');if(b){hfKind=b.dataset.kind;drawHfKind();}};
-$('#hfCancel').onclick=()=>{$('#holSheet').classList.remove('on');};
+$('#hfCancel').onclick=closeSheets;
 $('#hfSave').onclick=()=>{
   const date=$('#hfDate').value.trim();
   const name=$('#hfName').value.trim();
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert('날짜는 YYYY-MM-DD 형식으로 입력해 주세요. 예: 2026-08-14');return;}
+  if(!validDate(date)){alert('날짜는 YYYY-MM-DD 형식으로 입력해 주세요. 예: 2026-08-14');return;}
   if(!name){alert('공휴일 이름을 입력해 주세요.');return;}
   MANUAL_HOL[date]={name,counts:hfKind==='legal'};
   saveManualHol();rebuildHOL();
-  $('#holSheet').classList.remove('on');
+  closeSheets();
   hyYear=+date.slice(0,4);
   renderHolidayList();
   renderCurrentView();
@@ -1446,7 +1494,7 @@ function openYmPicker(){
   $('#scrim').classList.add('on');
   $('#ymSheet').classList.add('on');
 }
-function closeYmPicker(){$('#ymSheet').classList.remove('on');}
+function closeYmPicker(){closeSheets();}
 function drawYm(){
   const years=availableYears();
   const lo=Math.min(...years,cur.y-2), hi=Math.max(...years,cur.y+2);
@@ -1483,9 +1531,138 @@ document.querySelectorAll('nav.tabs button').forEach(b=>{
     render();
   };
 });
+
+/* Practical reliability and holiday refresh. */
+function validDate(d){
+  if(typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
+  const dt=pd(d);return Number.isFinite(dt.getTime())&&fd(dt)===d;
+}
+function setSaveStatus(message){
+  const el=document.getElementById('saveStatus');
+  if(el)el.textContent=message;
+}
+function closeSheets(){
+  document.querySelectorAll('.sheet.on').forEach(el=>el.classList.remove('on'));
+  $('#scrim').classList.remove('on');
+}
+function validateHolidayFeed(data){
+  if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('잘못된 자료 형식');
+  const result={};
+  for(const [year,dates] of Object.entries(data)){
+    if(!/^\d{4}$/.test(year)||+year<2024)continue;
+    if(!dates||typeof dates!=='object'||Array.isArray(dates))throw new Error('잘못된 연도');
+    const entries=Object.entries(dates);
+    if(entries.length<10||!dates[year+'-01-01']||!dates[year+'-12-25'])throw new Error('불완전한 연도');
+    result[year]={};
+    for(const [date,names] of entries){
+      if(!validDate(date)||!date.startsWith(year+'-')||!Array.isArray(names)||!names.length||
+        names.some(n=>typeof n!=='string'||!n.trim()||n.length>100))throw new Error('잘못된 공휴일');
+      result[year][date]=names;
+    }
+  }
+  if(!Object.keys(result).length)throw new Error('공휴일 자료 없음');
+  return result;
+}
+function renderHolidayStatus(){
+  const el=$('#holidayStatus'),btn=$('#holidayRefresh');
+  if(!el)return;
+  const stamp=holidayCheckedAt?new Date(holidayCheckedAt).toLocaleString('ko-KR'):'아직 확인하지 않음';
+  el.textContent=(holidayLoading?'확인 중… · ':holidayError?holidayError+' · ':'')+'마지막 확인: '+stamp;
+  btn.disabled=holidayLoading;
+  btn.textContent=holidayLoading?'확인 중…':'지금 갱신';
+}
+async function refreshHolidays(force=false){
+  const now=Date.now();
+  if(holidayLoading||(!force&&(now-holidayCheckedAt<MS||now-holidayAttemptAt<3600000)))return;
+  holidayLoading=true;holidayAttemptAt=now;holidayError='';renderHolidayStatus();
+  try{
+    const response=await fetch('https://holidays.hyunbin.page/basic.json',{cache:'no-store',signal:AbortSignal.timeout(12000)});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    const years=validateHolidayFeed(await response.json());
+    for(const y of Object.keys(LIVE_HOL))delete LIVE_HOL[y];
+    Object.assign(LIVE_HOL,years);holidayCheckedAt=Date.now();
+    kvSet('holiday-feed-v1',JSON.stringify({checkedAt:holidayCheckedAt,years}));
+    rebuildHOL();renderCurrentView();
+    if(tab==='holidays')renderHolidayList();
+    if(tab==='stats')renderStats();
+    if(tab==='set')renderSettingsHome($('#view-settings'));
+    if($('#detailSheet').classList.contains('on')&&$('#dEventForm').classList.contains('hide'))drawDetail();
+  }catch(e){holidayError='갱신 실패: 기존 자료를 유지합니다';}
+  finally{holidayLoading=false;renderHolidayStatus();}
+}
+async function startHolidays(){
+  try{
+    const saved=JSON.parse(await kvGet('holiday-feed-v1'));
+    if(saved&&Number.isFinite(saved.checkedAt)&&saved.checkedAt<=Date.now()){
+      Object.assign(LIVE_HOL,validateHolidayFeed(saved.years));holidayCheckedAt=saved.checkedAt;
+      rebuildHOL();renderCurrentView();
+    }
+  }catch(e){}
+  await refreshHolidays();
+}
+$('#holidayRefresh').onclick=()=>refreshHolidays(true);
+$('#scrim').onclick=closeSheets;
+let sheetReturnFocus=null;
+document.querySelectorAll('.sheet').forEach(sheet=>{
+  sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','true');
+  sheet.setAttribute('aria-label',sheet.id==='detailSheet'?'날짜 상세':sheet.id==='ymSheet'?'연도·월 선택':'공휴일 추가');
+  const close=document.createElement('button');
+  close.className='sheet-close';close.textContent='닫기';close.onclick=closeSheets;
+  sheet.prepend(close);
+  new MutationObserver(()=>{
+    const open=sheet.classList.contains('on');
+    sheet.inert=!open;
+    if(open){
+      if(!sheetReturnFocus)sheetReturnFocus=document.activeElement;
+      close.focus();
+    }else if(!document.querySelector('.sheet.on')){
+      $('#scrim').classList.remove('on');
+      if(sheetReturnFocus?.isConnected)sheetReturnFocus.focus();
+      sheetReturnFocus=null;
+    }
+  }).observe(sheet,{attributes:true,attributeFilter:['class']});
+  sheet.inert=true;
+});
+document.addEventListener('keydown',e=>{
+  const sheet=document.querySelector('.sheet.on');
+  if(sheet){
+    if(e.key==='Escape'){e.preventDefault();closeSheets();}
+    if(e.key==='Tab'){
+      const items=[...sheet.querySelectorAll('button,input,textarea,select,[tabindex="0"]')].filter(el=>!el.disabled&&el.getClientRects().length);
+      if(items.length&&(e.shiftKey?document.activeElement===items[0]:document.activeElement===items.at(-1))){
+        e.preventDefault();(e.shiftKey?items.at(-1):items[0]).focus();
+      }
+    }
+    return;
+  }
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-d],.setrow[id]')){
+    e.preventDefault();e.target.click();
+  }
+});
+function accessibleActions(){
+  const labels={efTitle:'일정 제목',efDetail:'일정 메모',efStartDate:'시작일',efEndDate:'종료일',efStartTime:'시작 시간',efEndTime:'종료 시간',efAllDay:'하루 종일',efImportant:'중요 일정',dMemo:'날짜별 메모',monthMemo:'이달의 메모',hfDate:'공휴일 날짜',hfName:'공휴일 이름',holBack:'설정으로',hyPrev:'이전 연도',hyNext:'다음 연도'};
+  for(const [id,label] of Object.entries(labels))document.getElementById(id)?.setAttribute('aria-label',label);
+  document.querySelectorAll('.cswatch').forEach(el=>el.setAttribute('aria-label','색상 '+el.dataset.color));
+  document.querySelectorAll('[data-d],.setrow[id]').forEach(el=>{
+    el.setAttribute('role','button');el.tabIndex=0;
+    if(el.dataset.d)el.setAttribute('aria-label',el.dataset.d+' '+(el.dataset.t||myTeam)+'조 '+el.textContent.trim());
+  });
+}
+new MutationObserver(accessibleActions).observe(document.querySelector('main'),{childList:true,subtree:true});
+function checkDay(){
+  const next=today();
+  if(next!==TODAY){TODAY=next;renderCurrentView();}
+  refreshHolidays();
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDay();});
+window.addEventListener('online',()=>refreshHolidays(true));
+setInterval(()=>{if(!document.hidden)checkDay();},60000);
+
 initCloud();
+if(!cloudReady)setSaveStatus('이 기기에 저장 · 공유 연결 없음');
 Promise.all([loadOvr(),loadEvents(),loadDayMemo(),loadMonthMemo(),loadManualHol(),loadColorSettings(),loadMyTeam()]).then(()=>{
   rebuildHOL();render();
+  startHolidays();accessibleActions();
   listenCloud(); // 로컬 데이터를 먼저 화면에 띄운 뒤, 클라우드에 있는 최신 데이터로 덮어씌운다
 });
   /* 조별 W(실제 근무) 개수 — 전체 근무표 상단 */
@@ -1528,3 +1705,4 @@ Promise.all([loadOvr(),loadEvents(),loadDayMemo(),loadMonthMemo(),loadManualHol(
 </script>
 </body>
 </html>
+
