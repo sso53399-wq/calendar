@@ -46,17 +46,21 @@
   .weekhead span{text-align:center;font-size:11px;font-weight:650;color:var(--ink-3);padding:9px 0 5px}
   .weekhead .sa{color:var(--sat)}.weekhead .su{color:var(--sun)}
   .wblock{padding:0 12px;margin-bottom:14px}
-  .dates{display:grid;grid-template-columns:26px repeat(7,1fr);border-bottom:1px solid var(--line)}
-  .dates b{text-align:center;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;padding:4px 0 6px;border-left:1px solid var(--line-2)}
-  .dates b.out{color:#dfe3ea}
-  .dates b.sa{color:var(--sat)}
-  .dates b.su,.dates b.hol{color:var(--sun)}
-  .dates b.now{
-    background:var(--today);color:#fff;border-radius:50%;
-    width:22px;height:22px;line-height:22px;display:inline-block;margin:0 auto;
-    box-shadow:0 0 0 3px rgba(22,163,74,.22);
-  }
-  .hname{grid-column:2/-1;font-size:10px;color:var(--sun);padding:0 0 4px 2px;font-weight:600}
+  /* 전체 근무표: 날짜 숫자 바로 아래에 해당 날짜의 공휴일 이름을 배치 */
+  .dates{display:grid;grid-template-columns:26px repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
+  .dates .date-slot{min-width:0;min-height:48px;padding:4px 1px 5px;border-left:1px solid var(--line-2);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;text-align:center}
+  .dates .date-digit{display:grid;place-items:center;width:23px;height:23px;flex:0 0 23px;
+    font-size:13px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .dates .date-slot.out{color:#dfe3ea}
+  .dates .date-slot.sa{color:var(--sat)}
+  .dates .date-slot.su,.dates .date-slot.hol{color:var(--sun)}
+  .dates .date-digit.now{background:var(--today);color:#fff;border-radius:50%;
+    box-shadow:0 0 0 3px rgba(22,163,74,.22)}
+  .dates .holiday-tag{width:100%;max-width:100%;overflow:hidden;text-align:center;
+    font-size:10px;font-weight:700;line-height:1.15;letter-spacing:-.15px;color:var(--sun);
+    word-break:keep-all;overflow-wrap:anywhere}
+  @media(max-width:480px){.dates .holiday-tag{font-size:9px}}
   .trow{display:grid;grid-template-columns:26px repeat(7,1fr);align-items:center;border-bottom:1px solid var(--line-2)}
   .trow:last-child{border-bottom:none}
   .trow.mine{background:var(--mine)}
@@ -846,6 +850,18 @@ const badge=c=>`<i class="badge b-${c}">${shiftLabel(c)}</i>`;
 function renderTeams(){
   $('#teams').innerHTML=TEAMS.map(t=>`<button class="team-chip" data-team="${t}" aria-pressed="${t===myTeam}">${t}조</button>`).join('');
 }
+/* 전체 근무표의 좁은 날짜 칸에는 명칭을 최대 두 줄로 표시한다.
+   괄호 설명이나 같은 날의 추가 명칭은 title/aria-label에서 원문 확인 가능. */
+function allHolidayLabel(name){
+  const first=String(name).split(/\s*[·・]\s*/)[0].replace(/[（(][^）)]*[）)]/g,'').replace(/\s+/g,'').trim();
+  const chars=Array.from(first);
+  if(first==='대체공휴일')return '대체<br>공휴일';
+  if(first==='부처님오신날')return '부처님<br>오신날';
+  if(first==='근로자의날')return '근로자의<br>날';
+  if(chars.length<=4)return escapeHtml(first);
+  const cut=Math.floor(Math.min(chars.length,8)/2);
+  return escapeHtml(chars.slice(0,cut).join(''))+'<br>'+escapeHtml(chars.slice(cut,8).join(''))+(chars.length>8?'…':'');
+}
 function renderAll(){
   const {y,m}=cur,last=dim(y,m),pre=`${y}-${String(m).padStart(2,'0')}`;
   const ot={};TEAMS.forEach(t=>ot[t]=overtime(y,m,t));
@@ -853,15 +869,16 @@ function renderAll(){
   let cursor=add(first,-dow(first));const end=mk(y,m,last);let html='';
   while(cursor<=end){
     const week=[];for(let i=0;i<7;i++)week.push(add(cursor,i));
-    let dates='<div class="dates"><b></b>';
+    let dates='<div class="dates"><span aria-hidden="true"></span>';
     week.forEach(d=>{
       const out=d.slice(0,7)!==pre;
-      const cls=[out?'out':'',dow(d)===6?'sa':'',dow(d)===0?'su':'',isHol(d)&&!out?'hol':'',d===TODAY?'now':''].filter(Boolean).join(' ');
-      dates+=`<b class="${cls}">${+d.slice(8)}</b>`;
+      const cls=[out?'out':'',dow(d)===6?'sa':'',dow(d)===0?'su':'',isHol(d)&&!out?'hol':''].filter(Boolean).join(' ');
+      const holiday=!out&&isHol(d)?HOL[d].name:'';
+      const detail=holiday?` title="${escapeHtml(holiday)}" aria-label="${+d.slice(8)}일 ${escapeHtml(holiday)}"`:'';
+      const name=holiday?`<span class="holiday-tag" aria-hidden="true">${allHolidayLabel(holiday)}</span>`:'';
+      dates+=`<div class="date-slot ${cls}"${detail}><span class="date-digit ${d===TODAY?'now':''}">${+d.slice(8)}</span>${name}</div>`;
     });
     dates+='</div>';
-    const names=week.filter(d=>isHol(d)&&d.slice(0,7)===pre).map(d=>`${+d.slice(8)}일 ${HOL[d].name}`);
-    const hn=names.length?`<div class="dates" style="border:none"><b></b><div class="hname">${names.join(' · ')}</div></div>`:'';
     let rows='';
     TEAMS.forEach(t=>{
       let cells='';
@@ -871,7 +888,7 @@ function renderAll(){
       });
       rows+=`<div class="trow ${t===myTeam?'mine':''}"><span class="tag">${t}</span>${cells}</div>`;
     });
-    html+=`<div class="wblock">${dates}${hn}${rows}</div>`;
+    html+=`<div class="wblock">${dates}${rows}</div>`;
     cursor=add(cursor,7);
   }
   $('#allBody').innerHTML=html;
